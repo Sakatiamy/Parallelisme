@@ -342,6 +342,31 @@ int main(int argc, char **argv) {
     cerr << "Somme des Longueurs = longueur totale de l'ex 1 ? " << sommeLongueurMot << " = " << l << endl;
     cerr << "Avec un dictionnaire de plus de 2619 mots ça ne fonctionne pas !!! Je ne comprends pas" << endl;
     cerr << "********************FIN EXO 2***********************" << endl;
+    
+    cerr << "********************DEBUT TEST LCSS***********************"<< endl;
+    int nberror = 0;
+    cout << "Query : " << query << endl;
+    cout << "Size : " << wordsSize << endl;
+    for (int i = 0; i < wordsSize; i++) {
+        const char * word = words[i].c_str();
+        int lcss_cpu = lcs(query, word);
+        if (lcss_cpu != bufferLCSS_CPU[i]) {
+            nberror++;
+            int lcss_2 = lcss2(query, word);
+            int lcs_0 = lcs(query, word);
+            cout << i << " ERROR : " << words[i].c_str() << endl;
+            cout << "lcss Dyna CPU : " << lcss_cpu << endl;
+            cout << "lcss 2 CPU : " << lcss_2 << endl;
+            cout << "lcs 0 CPU : " << lcs_0 << endl;
+            cout << "lcss Dyna GPU : " << bufferLCSS_CPU[i] << "\n" << endl;
+        }
+    }
+    cout << "\nNombre d'erreurs : " << nberror << "\n";
+    cout << "\nTaux d'erreur : " << ((nberror) / (double) wordsSize)*100.0 << "%\n";
+    cerr << "Avec un dictionnaire de plus de 364 (ça dépend, la taille varie) ça ne fonctionne pas !!! Je ne comprends pas" << endl;
+    cerr << "********************FIN TEST LCSS***********************"<< endl;
+    
+    
     return 0;
 }
 
