@@ -27,6 +27,7 @@ __kernel void histograms(
 __kernel void lcss( 
     __global const char *allwords, 
     __global const char *query, 
+    __global       int  *lengthWord, 
     __global       int  *lcss,
     int Q, // size of query string
     int L) // longest word
@@ -44,6 +45,32 @@ __kernel void lcss(
     sizeMot = sizeMot - 1; 
     // On soustrait de 1 pour rester cohérent avec le code CPU 
     // puisqu'on a décidé de ne pas compter le caractère '/n'
-    lcss[gid] = sizeMot;
+    lengthWord[gid] = sizeMot;
 }
 
+
+/*
+__kernel void lcss( 
+    __global const char *allwords, 
+    __global const char *query, 
+    __global       int  *lengthWord, 
+    __global       int  *lcss,
+    int Q, // size of query string
+    int L) // longest word
+{
+    int gid = get_global_id(0);
+    int sizeMot = 0;
+    int finMot = 0;
+    while(finMot == 0){
+        int ascii = (int)allwords[gid*L + sizeMot];
+        if((ascii == 0) || (sizeMot == L)){
+            finMot = 1;
+        }
+        sizeMot = sizeMot + 1;
+    }
+    sizeMot = sizeMot - 1; 
+    // On soustrait de 1 pour rester cohérent avec le code CPU 
+    // puisqu'on a décidé de ne pas compter le caractère '/n'
+    lengthWord[gid] = sizeMot;
+}
+*/

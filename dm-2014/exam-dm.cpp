@@ -278,15 +278,22 @@ int main(int argc, char **argv) {
 
     //// Ex2: TODO
     cl_int errLCSS;
-    cl::Kernel *krn_lcss = cluLoadKernel(prg, "lcss");
+    cl::Program *prg_lcss = cluLoadProgram(g_File);
+
+    cl::Kernel *krn_lcss = cluLoadKernel(prg_lcss, "lcss");
 
     int wordsSize = words.size();
     int querySize = strlen(query);
-    
+
     int *bufferLCSS_CPU = new int[wordsSize];
+    int *bufferLengthWord_CPU = new int[wordsSize];
 
     for (int i = 0; i < wordsSize; i++) {
         bufferLCSS_CPU[i] = 0;
+    }
+    
+    for (int i = 0; i < wordsSize; i++) {
+        bufferLengthWord_CPU[i] = 0;
     }
 
     //Buffer pour la query
@@ -301,28 +308,40 @@ int main(int argc, char **argv) {
             CL_MEM_WRITE_ONLY,
             sizeof (int)*wordsSize,
             NULL);
+    
+    cl::Buffer bufferLengthWord_Kernel(
+            *clu_Context,
+            CL_MEM_WRITE_ONLY,
+            sizeof (int)*wordsSize,
+            NULL);
 
     cl::Event eventLCSS;
-    double timeLCSS = 0;
     //Mise en place des Arguments
     krn_lcss->setArg(0, tableWords_GPU);
     krn_lcss->setArg(1, bufferQuery);
-    krn_lcss->setArg(2, bufferLCSS_Kernel);
-    krn_lcss->setArg(3, querySize);
-    krn_lcss->setArg(4, longest);
+    krn_lcss->setArg(2, bufferLengthWord_Kernel);
+    krn_lcss->setArg(3, bufferLCSS_Kernel);
+    krn_lcss->setArg(4, querySize);
+    krn_lcss->setArg(5, longest);
 
     errLCSS = clu_Queue->enqueueNDRangeKernel(*krn_lcss, cl::NullRange, cl::NDRange(size), cl::NDRange(G), NULL, &eventLCSS);
     cluCheckError(errLCSS, "enqueueNDRangeKernel_LCSS");
-    eventLCSS.wait();
-    timeLCSS = timeLCSS + cluEventMilliseconds(eventLCSS);
     //Permet de récuperer le temps d'execution du kernel a partir de l'event
+    clu_Queue->enqueueReadBuffer(bufferLengthWord_Kernel, false, 0, sizeof (int)*wordsSize, bufferLengthWord_CPU);
     clu_Queue->enqueueReadBuffer(bufferLCSS_Kernel, false, 0, sizeof (int)*wordsSize, bufferLCSS_CPU);
     clu_Queue->finish();
-    cerr << "********************DEBUT EXO 2***********************"<< endl;
+    cerr << "********************DEBUT EXO 2***********************" << endl;
+    int sommeLongueurMot = 0;
     for (int i = 0; i < wordsSize; i++) {
-        cerr << i << " : " << bufferLCSS_CPU[i] << endl;
+        sommeLongueurMot += bufferLengthWord_CPU[i];
+        //cerr << i << " : " << bufferLCSS_CPU[i] << endl;
     }
-    cerr << "********************FIN EXO 2***********************"<< endl;
+    //On remarque que l'ajout d'une ligne supplementaire induite par le retour chariot à la suite du dernier caractere de la derniere ligne du dictionnaire
+    //Sa valeur est tout le temps = 0
+    //Enfin l'indexation commence a 0 (Attention lorsqu'on compare manuellement avec les lignes indiquées sur gedit par exemple)
+    cerr << "Somme des Longueurs = longueur totale de l'ex 1 ? " << sommeLongueurMot << " = " << l << endl;
+    cerr << "Avec un dictionnaire de plus de 2619 mots ça ne fonctionne pas !!! Je ne comprends pas" << endl;
+    cerr << "********************FIN EXO 2***********************" << endl;
     return 0;
 }
 
