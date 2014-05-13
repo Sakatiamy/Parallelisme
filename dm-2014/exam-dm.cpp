@@ -19,11 +19,12 @@ using namespace std;
 #define G 64
 
 // ----------------------------------------------------------
+
 int lcss(const char *str0, const char *str1) {
     int sizeN = strlen(str0);
-    int sizeM = strlen(str1);    
+    int sizeM = strlen(str1);
     int dynamicProg[sizeN][sizeM];
-    if(sizeN == 0 || sizeM == 0){
+    if (sizeN == 0 || sizeM == 0) {
         return 0;
     }
     for (int j = 0; j < sizeM; j++) {
@@ -45,62 +46,63 @@ int lcss(const char *str0, const char *str1) {
         }
         cerr << endl;
     }*/
-    return dynamicProg[sizeN-1][sizeM-1];
+    return dynamicProg[sizeN - 1][sizeM - 1];
 }
 
 //Colonne_Major
+
 int lcss2(const char *str0, const char *str1) {
     int sizeN = strlen(str0);
-    int sizeM = strlen(str1);    
-    int dynamicProg[sizeN*sizeM];
-    if(sizeN == 0 || sizeM == 0){
+    int sizeM = strlen(str1);
+    int dynamicProg[sizeN * sizeM];
+    if (sizeN == 0 || sizeM == 0) {
         return 0;
     }
     for (int i = 0; i < sizeN; i++) {
         dynamicProg[i] = 0;
         for (int j = 0; j < sizeM; j++) {
-            dynamicProg[i + j*sizeN] = 0;
+            dynamicProg[i + j * sizeN] = 0;
         }
     }
     for (int i = 1; i < sizeN; i++) {
         for (int j = 1; j < sizeM; j++) {
             if (str0[i] == str1[j]) {
-                dynamicProg[i+j*sizeN] = 1 + dynamicProg[(i - 1) + (j - 1)*sizeN];
+                dynamicProg[i + j * sizeN] = 1 + dynamicProg[(i - 1) + (j - 1) * sizeN];
             } else {
-                dynamicProg[i+j*sizeN] = max(dynamicProg[(i - 1) + j*sizeN], dynamicProg[i + (j - 1)*sizeN]);
+                dynamicProg[i + j * sizeN] = max(dynamicProg[(i - 1) + j * sizeN], dynamicProg[i + (j - 1) * sizeN]);
             }
         }
     }
-   /* for (int i = 0; i < sizeN*sizeM; i++) {
-            cerr << dynamicProg[i] << " | ";
-    }*/
-    return dynamicProg[(sizeN-1)+(sizeM-1) * sizeN];
+    /* for (int i = 0; i < sizeN*sizeM; i++) {
+             cerr << dynamicProg[i] << " | ";
+     }*/
+    return dynamicProg[(sizeN - 1)+(sizeM - 1) * sizeN];
 }
 
-int lcs(string S, string T){
+int lcs(string S, string T) {
     int m = S.size();
     int n = T.size();
-    int LCS[m+1][n+1];
-    for(int i = 0; i <= m; i++){
+    int LCS[m + 1][n + 1];
+    for (int i = 0; i <= m; i++) {
         LCS[i][n] = 0;
     }
-    for(int j = 0; j <= n; j++){
+    for (int j = 0; j <= n; j++) {
         LCS[m][j] = 0;
     }
-    for(int i = m-1; i>=0; i--){
-        for(int j = n-1; j>=0;j--){
-            LCS[i][j] = LCS[i+1][j+1];
-            if(S[i] == T[j]){
+    for (int i = m - 1; i >= 0; i--) {
+        for (int j = n - 1; j >= 0; j--) {
+            LCS[i][j] = LCS[i + 1][j + 1];
+            if (S[i] == T[j]) {
                 LCS[i][j] = LCS[i][j] + 1;
             }
-            if(LCS[i][j+1] > LCS[i][j]){
-                LCS[i][j] = LCS[i][j+1];
+            if (LCS[i][j + 1] > LCS[i][j]) {
+                LCS[i][j] = LCS[i][j + 1];
             }
-            if(LCS[i+1][j] > LCS[i][j]){
-                LCS[i][j] = LCS[i+1][j];
+            if (LCS[i + 1][j] > LCS[i][j]) {
+                LCS[i][j] = LCS[i + 1][j];
             }
         }
-    } 
+    }
     /*for (int i = 0; i < m+1; i++) {
         for (int j = 0; j < n+1; j++) {
             cerr << LCS[i][j] << " | ";
@@ -110,15 +112,14 @@ int lcs(string S, string T){
     return LCS[0][0];
 }
 
-
-void testLCSS(){
-  // string s1 = "ABCDEFGH"; // 8
-   // string s1 = "BACBAD"; // 8
-  //  string s1 = "anteropygal"; // 8
+void testLCSS() {
+    // string s1 = "ABCDEFGH"; // 8
+    // string s1 = "BACBAD"; // 8
+    //  string s1 = "anteropygal"; // 8
     string s1 = "AAACCGTGAGTTATTCGTTCTAGAA"; // 8
     //string s2 = "ZZCZFZH"; // 7
- // string s2 = "ABAZDC"; // 7
-  //string s2 = " default"; // 7
+    // string s2 = "ABAZDC"; // 7
+    //string s2 = " default"; // 7
     string s2 = "CACCCCTAAGGTACCTTTGGTTC"; // 7
     const char * c1 = s1.c_str();
     const char * c2 = s2.c_str();
@@ -130,7 +131,7 @@ void testLCSS(){
 
     int lcs1 = lcs(s1, s2);
     cerr << "LCCS 2 : " << lcs1 << endl;
-   
+
     string st;
     st = c1;
     cerr << "S : " << st << endl;
@@ -140,42 +141,41 @@ void testLCSS(){
 }
 // ----------------------------------------------------------
 
-int main(int argc,char **argv)
-{
-  const char *g_File = SRC_PATH "exam-dm.cl";
+int main(int argc, char **argv) {
+    const char *g_File = SRC_PATH "exam-dm.cl";
 
-  char *query;
-  if (argc != 2) {
-    query = " default";
-    cerr << "You can specify the query string on the command line" << endl;
-  } else {
-    query    = new char[strlen( argv[1] ) + 2];
-    query[0] = ' ';
-    strcpy( query+1 , argv[1] );
-  }
+    char *query;
+    if (argc != 2) {
+        query = " default";
+        cerr << "You can specify the query string on the command line" << endl;
+    } else {
+        query = new char[strlen(argv[1]) + 2];
+        query[0] = ' ';
+        strcpy(query + 1, argv[1]);
+    }
 
-  // init OpenCL
-  cl_int err;
-  cluInit();
-  cl::Program *prg = cluLoadProgram(g_File);
-  
-  cerr << "Query: '" << query << '\'' << endl;
+    // init OpenCL
+    cl_int err;
+    cluInit();
+    cl::Program *prg = cluLoadProgram(g_File);
 
-  // load dictionary
-  vector<string> words;
-  ifstream dict(SRC_PATH "test.txt");
-  char str[1024];
-  int  longest = 0;
-  while ( dict ) {
-    dict.getline( str, 1024 );
-    //words.push_back(" " + string(str)); //Choix de ma part, l'espace au debut de chaque mot me perturbe car ça rajoute 1 à la longueur
-    words.push_back(string(str));
-    longest = max( longest, (int)words.back().length() );
-  }
-  cerr << "Dictionary contains " << words.size() << " entries, longest is " << longest << " chars." << endl;
+    cerr << "Query: '" << query << '\'' << endl;
 
-  //// Ex1: TODO
-  	
+    // load dictionary
+    vector<string> words;
+    ifstream dict(SRC_PATH "test.txt");
+    char str[1024];
+    int longest = 0;
+    while (dict) {
+        dict.getline(str, 1024);
+        //words.push_back(" " + string(str)); //Choix de ma part, l'espace au debut de chaque mot me perturbe car ça rajoute 1 à la longueur
+        words.push_back(string(str));
+        longest = max(longest, (int) words.back().length());
+    }
+    cerr << "Dictionary contains " << words.size() << " entries, longest is " << longest << " chars." << endl;
+
+    //// Ex1: TODO
+
     int size = words.size() * longest;
     int variation = size % G;
     if (variation != 0) {
@@ -201,7 +201,7 @@ int main(int argc,char **argv)
     int longueurSize = longest + 1; // Redimensionnement obligatoire pour garantir l'increment dans la case d'indice "longest" du tableau,
     int *bufferChar = new int[N];
     int *bufferLength = new int[longueurSize];
-    
+
     for (int i = 0; i < N; i++) {
         bufferChar[i] = 0;
     }
@@ -209,7 +209,7 @@ int main(int argc,char **argv)
     for (int i = 0; i < longueurSize; i++) {
         bufferLength[i] = 0;
     }
-        
+
     //Buffer pour l'histogramme des caracteres
     cl::Buffer bufferHistogramsChar(
             *clu_Context,
@@ -231,7 +231,7 @@ int main(int argc,char **argv)
             CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
             sizeof (char)*size,
             allwords);
-            
+
     cl::Event eventGlobal;
     double time = 0;
     //Mise en place des Arguments
@@ -247,13 +247,13 @@ int main(int argc,char **argv)
     clu_Queue->enqueueReadBuffer(bufferHistogramsChar, false, 0, sizeof (int)*N, bufferChar);
     clu_Queue->enqueueReadBuffer(bufferHistogramsLength, false, 0, sizeof (int)*longueurSize, bufferLength);
     clu_Queue->finish();
-    cerr << "********************DEBUT EXO 1***********************"<< endl;
+    cerr << "********************DEBUT EXO 1***********************" << endl;
 
     int s = 0;
     int non_alphabetique = 0;
     for (int i = 0; i < N; i++) {
         s += bufferChar[i];
-        if(i < 65 || i > 122){
+        if (i < 65 || i > 122) {
             non_alphabetique += bufferChar[i];
         }
         cerr << i << " : " << bufferChar[i] << endl;
@@ -264,22 +264,23 @@ int main(int argc,char **argv)
     cerr << "**************************************" << endl;
     int l = 0;
     for (int i = 0; i < longueurSize; i++) {
-        l += i*bufferLength[i];
+        l += i * bufferLength[i];
         cerr << i << " : " << bufferLength[i] << endl;
     }
-    int longueur_alphabetique = l - bufferChar[32] - bufferChar[13]; // 32 = code_ascii du retour chariot '\n', et 13 code_ascii de l'espace c'est pour ça qu'au debut on avait des differences (lors de la copie, ça augmente la taille des mots de +1)
-    cerr << "Longueur totale " << l << endl;  
-    cerr << "Longueur alphabetique = Nombre caracteres ? " << longueur_alphabetique << " = " << alphabetique << endl;  
+    int longueur_alphabetique = l - bufferChar[32] - bufferChar[13]; 
+    // 32 = code_ascii du retour chariot '\n', et 13 code_ascii de l'espace.
+    cerr << "Longueur totale " << l << endl;
+    cerr << "Longueur alphabetique = Nombre caracteres ? " << longueur_alphabetique << " = " << alphabetique << endl;
     cerr << "\nLes différences entre la longueur totale et la longueur alphabetique viennent de la présence de : " << endl;
     cerr << "\t - \"retour chariot\" (code_ascii = 13) ou" << endl;
     cerr << "\t - \"d'espaces\" (code_ascii = 32)." << endl;
-    cerr <<"Ainsi, si on soustrait leur nombre d'occurences, on doit (normalement ^^) obtenir la même valeur pour la longueur alphabetique et le nombre de caractère alphabetique !" << endl;   
+    cerr << "Ainsi, si on soustrait leur nombre d'occurences, on doit (normalement ^^) obtenir la même valeur pour la longueur alphabetique et le nombre de caractère alphabetique !" << endl;
     cerr << "\nTemps d'execution GPU EXO 1 : " << time << "ms" << endl;
-    cerr << "********************FIN EXO 1***********************"<< endl;
+    cerr << "********************FIN EXO 1***********************" << endl;
 
-  //// Ex2: TODO
+    //// Ex2: TODO
 
-  return 0;
+    return 0;
 }
 
 // ----------------------------------------------------------
