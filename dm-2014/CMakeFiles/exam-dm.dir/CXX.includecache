@@ -14,24 +14,6 @@ CL/cl.h
 CL/cl.hpp
 ./common/CL/cl.hpp
 
-/home/sakatiamy/Etude/Netbeans/NetBeansProjects/Parallelisme/dm-2014/common/clutils.cpp
-cstdio
--
-cstdlib
--
-iostream
--
-fstream
--
-sstream
--
-CL/cl.h
-/home/sakatiamy/Etude/Netbeans/NetBeansProjects/Parallelisme/dm-2014/common/CL/cl.h
-CL/cl.hpp
-/home/sakatiamy/Etude/Netbeans/NetBeansProjects/Parallelisme/dm-2014/common/CL/cl.hpp
-sys/time.h
--
-
 /home/sakatiamy/Etude/Netbeans/NetBeansProjects/Parallelisme/dm-2014/exam-dm.cpp
 cstdio
 -

@@ -154,11 +154,6 @@ int main(int argc, char **argv) {
         strcpy(query + 1, argv[1]);
     }
 
-    // init OpenCL
-    cl_int err;
-    cluInit();
-    cl::Program *prg = cluLoadProgram(g_File);
-
     cerr << "Query: '" << query << '\'' << endl;
 
     // load dictionary
@@ -173,8 +168,6 @@ int main(int argc, char **argv) {
         longest = max(longest, (int) words.back().length());
     }
     cerr << "Dictionary contains " << words.size() << " entries, longest is " << longest << " chars." << endl;
-
-    //// Ex1: TODO
 
     int size = words.size() * longest;
     int variation = size % G;
@@ -194,10 +187,14 @@ int main(int argc, char **argv) {
         strcpy(start, words[w].c_str());
     }
 
-    cl::Kernel *krn_histograms = cluLoadKernel(prg, "histograms");
+    // init OpenCL
+    cluInit();
+    cl::Program *prg = cluLoadProgram(g_File);
 
     //// Ex1: TODO
-    int wordsSize = words.size();
+    cl_int errHistograms;
+    cl::Kernel *krn_histograms = cluLoadKernel(prg, "histograms");
+
     int longueurSize = longest + 1; // Redimensionnement obligatoire pour garantir l'increment dans la case d'indice "longest" du tableau,
     int *bufferChar = new int[N];
     int *bufferLength = new int[longueurSize];
@@ -232,17 +229,18 @@ int main(int argc, char **argv) {
             sizeof (char)*size,
             allwords);
 
-    cl::Event eventGlobal;
-    double time = 0;
+    cl::Event eventHistograms;
+    double timeHistograms = 0;
     //Mise en place des Arguments
     krn_histograms->setArg(0, tableWords_GPU);
     krn_histograms->setArg(1, bufferHistogramsChar);
     krn_histograms->setArg(2, bufferHistogramsLength);
     krn_histograms->setArg(3, longest);
 
-    err = clu_Queue->enqueueNDRangeKernel(*krn_histograms, cl::NullRange, cl::NDRange(size), cl::NDRange(G), NULL, &eventGlobal);
-    cluCheckError(err, "enqueueNDRangeKernel_Histograms");
-    eventGlobal.wait();
+    errHistograms = clu_Queue->enqueueNDRangeKernel(*krn_histograms, cl::NullRange, cl::NDRange(size), cl::NDRange(G), NULL, &eventHistograms);
+    cluCheckError(errHistograms, "enqueueNDRangeKernel_Histograms");
+    eventHistograms.wait();
+    timeHistograms = timeHistograms + cluEventMilliseconds(eventHistograms);
     //Permet de récuperer le temps d'execution du kernel a partir de l'event
     clu_Queue->enqueueReadBuffer(bufferHistogramsChar, false, 0, sizeof (int)*N, bufferChar);
     clu_Queue->enqueueReadBuffer(bufferHistogramsLength, false, 0, sizeof (int)*longueurSize, bufferLength);
@@ -267,7 +265,7 @@ int main(int argc, char **argv) {
         l += i * bufferLength[i];
         cerr << i << " : " << bufferLength[i] << endl;
     }
-    int longueur_alphabetique = l - bufferChar[32] - bufferChar[13]; 
+    int longueur_alphabetique = l - bufferChar[32] - bufferChar[13];
     // 32 = code_ascii du retour chariot '\n', et 13 code_ascii de l'espace.
     cerr << "Longueur totale " << l << endl;
     cerr << "Longueur alphabetique = Nombre caracteres ? " << longueur_alphabetique << " = " << alphabetique << endl;
@@ -275,11 +273,56 @@ int main(int argc, char **argv) {
     cerr << "\t - \"retour chariot\" (code_ascii = 13) ou" << endl;
     cerr << "\t - \"d'espaces\" (code_ascii = 32)." << endl;
     cerr << "Ainsi, si on soustrait leur nombre d'occurences, on doit (normalement ^^) obtenir la même valeur pour la longueur alphabetique et le nombre de caractère alphabetique !" << endl;
-    cerr << "\nTemps d'execution GPU EXO 1 : " << time << "ms" << endl;
+    cerr << "\nTemps d'execution GPU EXO 1 : " << timeHistograms << "ms" << endl;
     cerr << "********************FIN EXO 1***********************" << endl;
 
     //// Ex2: TODO
+    cl_int errLCSS;
+    cl::Kernel *krn_lcss = cluLoadKernel(prg, "lcss");
 
+    int wordsSize = words.size();
+    int querySize = strlen(query);
+    
+    int *bufferLCSS_CPU = new int[wordsSize];
+
+    for (int i = 0; i < wordsSize; i++) {
+        bufferLCSS_CPU[i] = 0;
+    }
+
+    //Buffer pour la query
+    cl::Buffer bufferQuery(
+            *clu_Context,
+            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+            sizeof (char)*querySize,
+            query);
+
+    cl::Buffer bufferLCSS_Kernel(
+            *clu_Context,
+            CL_MEM_WRITE_ONLY,
+            sizeof (int)*wordsSize,
+            NULL);
+
+    cl::Event eventLCSS;
+    double timeLCSS = 0;
+    //Mise en place des Arguments
+    krn_lcss->setArg(0, tableWords_GPU);
+    krn_lcss->setArg(1, bufferQuery);
+    krn_lcss->setArg(2, bufferLCSS_Kernel);
+    krn_lcss->setArg(3, querySize);
+    krn_lcss->setArg(4, longest);
+
+    errLCSS = clu_Queue->enqueueNDRangeKernel(*krn_lcss, cl::NullRange, cl::NDRange(size), cl::NDRange(G), NULL, &eventLCSS);
+    cluCheckError(errLCSS, "enqueueNDRangeKernel_LCSS");
+    eventLCSS.wait();
+    timeLCSS = timeLCSS + cluEventMilliseconds(eventLCSS);
+    //Permet de récuperer le temps d'execution du kernel a partir de l'event
+    clu_Queue->enqueueReadBuffer(bufferLCSS_Kernel, false, 0, sizeof (int)*wordsSize, bufferLCSS_CPU);
+    clu_Queue->finish();
+    cerr << "********************DEBUT EXO 2***********************"<< endl;
+    for (int i = 0; i < wordsSize; i++) {
+        cerr << i << " : " << bufferLCSS_CPU[i] << endl;
+    }
+    cerr << "********************FIN EXO 2***********************"<< endl;
     return 0;
 }
 
