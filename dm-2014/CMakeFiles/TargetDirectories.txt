@@ -1,0 +1,1 @@
+/home/sakatiamy/Etude/Netbeans/NetBeansProjects/Parallelisme/dm-2014/CMakeFiles/exam-dm.dir
