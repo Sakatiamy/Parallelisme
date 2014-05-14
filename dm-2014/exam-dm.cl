@@ -45,7 +45,10 @@ __kernel void lcss(
     sizeMot = sizeMot - 1; 
     // On soustrait de 1 pour rester cohérent avec le code CPU 
     // puisqu'on a décidé de ne pas compter le caractère '/n'
+
     lengthWord[gid] = sizeMot;
+    //On sauvegarde la longueur de chaque mot, est-ce utile ou pas, on verra ^^
+    //C'est plus un test pour verifier que l'algo fonctionne
 
     int dynamicProg[100][100]; //n'accepte pas des variables
     for (int j = 0; j < sizeMot; j++) {
@@ -72,8 +75,8 @@ __kernel void lcss(
         index = gid / L;
     }
     lcss[gid] = lcss_value;
-}*/
-
+}
+*/
 
 __kernel void lcss( 
     __global const char *allwords, 
@@ -123,9 +126,11 @@ __kernel void lcss(
             }
         }
     }
-    lcss[gid] = LCS[0][0];
-}
+    int lcss_value = LCS[0][0];
+    lcss[gid] = lcss_value;
 
+
+}
 
 /*
 __kernel void lcss( 
@@ -152,3 +157,45 @@ __kernel void lcss(
     lengthWord[gid] = sizeMot;
 }
 */
+/*
+__kernel void list(
+    __global const char *allwords, 
+    __global const int  *lcss, 
+    __global const int  *lengthWord, 
+    __global       int  *tabWord,
+    int valueLCSS, // request value
+    int L) // longest word
+{
+    int gid = get_global_id(0);
+    int position = gid%L;
+    int index = 0;
+    if(position != 0){
+        int temp = L - position;
+        index = gid + temp / L; 
+    }
+    else{
+        index = gid / L;
+    }
+    int sizeMot = lengthWord[gid];
+    if(lcss[gid] == valueLCSS){
+        char mot[100];
+        for(int i = 0; i < 100; i++){
+            mot[i] = allwords[index*L + i];
+        }
+        tabWord[gid] = mot;
+    } 
+}
+*/
+
+__kernel void list(
+    __global const char *allwords, 
+    __global const int  *lcss, 
+    __global       int  *bufferList,
+    int valueLCSS, // request value
+    int L) // longest word
+{
+    int gid = get_global_id(0);
+    if(lcss[gid] == valueLCSS){
+        bufferList[gid] = 1;
+    } 
+}

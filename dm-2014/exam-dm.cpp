@@ -51,7 +51,7 @@ int lcss(const char *str0, const char *str1) {
 
 //Colonne_Major
 
-int lcss2(const char *str0, const char *str1) {
+int lcss1D(const char *str0, const char *str1) {
     int sizeN = strlen(str0);
     int sizeM = strlen(str1);
     int dynamicProg[sizeN * sizeM];
@@ -79,7 +79,7 @@ int lcss2(const char *str0, const char *str1) {
     return dynamicProg[(sizeN - 1)+(sizeM - 1) * sizeN];
 }
 
-int lcs(string S, string T) {
+int lcssBest(string S, string T) {
     int m = S.size();
     int n = T.size();
     int LCS[m + 1][n + 1];
@@ -126,10 +126,10 @@ void testLCSS() {
     int lccs = lcss(c1, c2);
     cerr << "LCCS 2D: " << lccs << endl;
 
-    int lccs_1D = lcss2(c1, c2);
+    int lccs_1D = lcss1D(c1, c2);
     cerr << "LCCS 1D: " << lccs_1D << endl;
 
-    int lcs1 = lcs(s1, s2);
+    int lcs1 = lcssBest(s1, s2);
     cerr << "LCCS 2 : " << lcs1 << endl;
 
     string st;
@@ -192,6 +192,8 @@ int main(int argc, char **argv) {
     cl::Program *prg = cluLoadProgram(g_File);
 
     //// Ex1: TODO
+    cerr << "********************DEBUT EXO 1***********************" << endl;
+
     cl_int errHistograms;
     cl::Kernel *krn_histograms = cluLoadKernel(prg, "histograms");
 
@@ -245,7 +247,6 @@ int main(int argc, char **argv) {
     clu_Queue->enqueueReadBuffer(bufferHistogramsChar, false, 0, sizeof (int)*N, bufferChar);
     clu_Queue->enqueueReadBuffer(bufferHistogramsLength, false, 0, sizeof (int)*longueurSize, bufferLength);
     clu_Queue->finish();
-    cerr << "********************DEBUT EXO 1***********************" << endl;
 
     int s = 0;
     int non_alphabetique = 0;
@@ -254,7 +255,7 @@ int main(int argc, char **argv) {
         if (i < 65 || i > 122) {
             non_alphabetique += bufferChar[i];
         }
-        cerr << i << " : " << bufferChar[i] << endl;
+        cerr << "Occurence caractere, " << i << " : " << bufferChar[i] << endl;
     }
     int alphabetique = s - non_alphabetique;
     cerr << "Nombre de caracteres total =  " << s << endl;
@@ -263,7 +264,7 @@ int main(int argc, char **argv) {
     int l = 0;
     for (int i = 0; i < longueurSize; i++) {
         l += i * bufferLength[i];
-        cerr << i << " : " << bufferLength[i] << endl;
+        cerr << "Occurence Longueur, " << i << " : " << bufferLength[i] << endl;
     }
     int longueur_alphabetique = l - bufferChar[32] - bufferChar[13];
     // 32 = code_ascii du retour chariot '\n', et 13 code_ascii de l'espace.
@@ -277,21 +278,22 @@ int main(int argc, char **argv) {
     cerr << "********************FIN EXO 1***********************" << endl;
 
     //// Ex2: TODO
+    cerr << "********************DEBUT EXO 2***********************" << endl;
+
     cl_int errLCSS;
     cl::Program *prg_lcss = cluLoadProgram(g_File);
 
     cl::Kernel *krn_lcss = cluLoadKernel(prg_lcss, "lcss");
 
-    int wordsSize = words.size();
+    int wordsSize = words.size() - 1; //-1 pour enlever la toute derniere ligne (ie ligne engendrée par '/n')
     int querySize = strlen(query);
 
     int *bufferLCSS_CPU = new int[wordsSize];
     int *bufferLengthWord_CPU = new int[wordsSize];
-
     for (int i = 0; i < wordsSize; i++) {
         bufferLCSS_CPU[i] = 0;
     }
-    
+
     for (int i = 0; i < wordsSize; i++) {
         bufferLengthWord_CPU[i] = 0;
     }
@@ -308,7 +310,7 @@ int main(int argc, char **argv) {
             CL_MEM_WRITE_ONLY,
             sizeof (int)*wordsSize,
             NULL);
-    
+
     cl::Buffer bufferLengthWord_Kernel(
             *clu_Context,
             CL_MEM_WRITE_ONLY,
@@ -330,43 +332,90 @@ int main(int argc, char **argv) {
     clu_Queue->enqueueReadBuffer(bufferLengthWord_Kernel, false, 0, sizeof (int)*wordsSize, bufferLengthWord_CPU);
     clu_Queue->enqueueReadBuffer(bufferLCSS_Kernel, false, 0, sizeof (int)*wordsSize, bufferLCSS_CPU);
     clu_Queue->finish();
-    cerr << "********************DEBUT EXO 2***********************" << endl;
     int sommeLongueurMot = 0;
     for (int i = 0; i < wordsSize; i++) {
         sommeLongueurMot += bufferLengthWord_CPU[i];
-        //cerr << i << " : " << bufferLCSS_CPU[i] << endl;
+        cerr << "Longueur du Mot, " << i << " : " << bufferLengthWord_CPU[i] << endl;
     }
+
     //On remarque que l'ajout d'une ligne supplementaire induite par le retour chariot à la suite du dernier caractere de la derniere ligne du dictionnaire
     //Sa valeur est tout le temps = 0
     //Enfin l'indexation commence a 0 (Attention lorsqu'on compare manuellement avec les lignes indiquées sur gedit par exemple)
     cerr << "Somme des Longueurs = longueur totale de l'ex 1 ? " << sommeLongueurMot << " = " << l << endl;
+    int lcssMinimum = INT16_MAX;
+    for (int i = 0; i < wordsSize; i++) {
+        lcssMinimum = min(lcssMinimum, bufferLCSS_CPU[i]);
+        cerr << "LCSS, " << i << " : " << bufferLCSS_CPU[i] << endl;
+    }
+    cerr << "Le LCSS Minimum est : " << lcssMinimum << endl;
     cerr << "Avec un dictionnaire de plus de 2619 mots ça ne fonctionne pas !!! Je ne comprends pas" << endl;
     cerr << "********************FIN EXO 2***********************" << endl;
-    
-    cerr << "********************DEBUT TEST LCSS***********************"<< endl;
-    int nberror = 0;
-    cout << "Query : " << query << endl;
-    cout << "Size : " << wordsSize << endl;
+
+    cerr << "********************DEBUT TEST LCSS***********************" << endl;
+    cout << "Valeur de la query : " << query << endl;
+    cout << "Nombre de Mots a teste : " << wordsSize << "\n" << endl;
+    int compteurErreur = 0;
     for (int i = 0; i < wordsSize; i++) {
         const char * word = words[i].c_str();
-        int lcss_cpu = lcs(query, word);
-        if (lcss_cpu != bufferLCSS_CPU[i]) {
-            nberror++;
-            int lcss_2 = lcss2(query, word);
-            int lcs_0 = lcs(query, word);
-            cout << i << " ERROR : " << words[i].c_str() << endl;
-            cout << "lcss Dyna CPU : " << lcss_cpu << endl;
-            cout << "lcss 2 CPU : " << lcss_2 << endl;
-            cout << "lcs 0 CPU : " << lcs_0 << endl;
-            cout << "lcss Dyna GPU : " << bufferLCSS_CPU[i] << "\n" << endl;
+        int lcss_Best = lcssBest(query, word);
+        int lcss_2D = lcss(query, word);
+        int lcss_1D = lcss1D(query, word);
+        if (lcss_Best != bufferLCSS_CPU[i]) {
+            compteurErreur++;
+            //            cout << "Numero de ligne et Mot qui provoque une erreur : " << i << ", " << words[i].c_str() << endl;
+            //            cout << "lcss Best : " << lcss_Best << endl;
+            //            cout << "lcss 2D: " << lcss_2D << endl;
+            //            cout << "lcss 1D: " << lcss_1D << endl;
+            //            cout << "lcss Dyna GPU : " << bufferLCSS_CPU[i] << "\n" << endl;
         }
+        //        cout << "Numero de ligne et Mot qui provoque une erreur : " << i << ", " << words[i].c_str() << endl;
+        //        cout << "lcss Best : " << lcss_Best << endl;
+        //        cout << "lcss 2D: " << lcss_2D << endl;
+        //        cout << "lcss 1D: " << lcss_1D << endl;
+        //        cout << "lcss Dyna GPU : " << bufferLCSS_CPU[i] << "\n" << endl;
     }
-    cout << "\nNombre d'erreurs : " << nberror << "\n";
-    cout << "\nTaux d'erreur : " << ((nberror) / (double) wordsSize)*100.0 << "%\n";
-    cerr << "Avec un dictionnaire de plus de 364 (ça dépend, la taille varie) ça ne fonctionne pas !!! Je ne comprends pas" << endl;
-    cerr << "********************FIN TEST LCSS***********************"<< endl;
-    
-    
+    cout << "\nNombre d'erreurs : " << compteurErreur << "\n";
+    cout << "\nTaux d'erreur : " << ((compteurErreur) / (double) wordsSize)*100.0 << "%\n";
+    cerr << "Avec un dictionnaire de plus de 383 ça ne fonctionne pas !!! Je ne comprends pas" << endl;
+    cerr << "********************FIN TEST LCSS***********************" << endl;
+
+    cerr << "********************DEBUT EXO 3***********************" << endl;
+    cl_int errList;
+    cl::Program *prg_list = cluLoadProgram(g_File);
+
+    cl::Kernel *krn_list = cluLoadKernel(prg_list, "list");
+
+    int *tabString = new int[wordsSize];
+    for (int i = 0; i < wordsSize; i++) {
+        tabString[i] = 0;
+    }
+
+    cl::Buffer bufferList(
+            *clu_Context,
+            CL_MEM_WRITE_ONLY,
+            sizeof (int) * wordsSize,
+            NULL);
+
+    cl::Event eventList;
+    //Mise en place des Arguments
+    krn_list->setArg(0, tableWords_GPU);
+    krn_list->setArg(1, bufferLCSS_Kernel);
+    krn_list->setArg(2, bufferList);
+    krn_list->setArg(3, lcssMinimum);
+    krn_list->setArg(4, longest);
+
+    errList = clu_Queue->enqueueNDRangeKernel(*krn_list, cl::NullRange, cl::NDRange(size), cl::NDRange(G), NULL, &eventList);
+    cluCheckError(errList, "enqueueNDRangeKernel_List");
+    //Permet de récuperer le temps d'execution du kernel a partir de l'event
+    clu_Queue->enqueueReadBuffer(bufferList, false, 0, sizeof (int) * wordsSize, tabString);
+    clu_Queue->finish();
+
+    for (int i = 0; i < wordsSize; i++) {
+        cerr << i << " : " << tabString[i] << endl;
+    }
+    //Fonctionne pas, p-e du au buffer que l'on réutilise ???
+    cerr << "********************FIN EXO 3***********************" << endl;
+
     return 0;
 }
 
