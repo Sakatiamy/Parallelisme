@@ -4,60 +4,51 @@ __kernel void histograms(
     __global int *bufferHistogramsLength, // histogramme de la longueur des mots
 	uint L) // longest word
 {
-    int gid = get_global_id(0);
-    int code_ascii = (int)allwords[gid];
-    int code_ascii_suivant = (int)allwords[gid+1];
-    atomic_inc(bufferHistogramsChar+code_ascii);
-    int longueur = 0;
-    if(code_ascii != 0){
-        if((gid % L) == L-1){
-            longueur = L;
-            atomic_inc(bufferHistogramsLength+longueur);
-        }
+int gid = get_global_id(0);
+int code_ascii = (int)allwords[gid];
+int code_ascii_suivant = (int)allwords[gid+1];
+atomic_inc(bufferHistogramsChar+code_ascii);
+if(code_ascii != 0){
+    if((gid % L) == L-1){
+        int longueur = L-1;
+        atomic_inc(bufferHistogramsLength+longueur);
+    }
 
-        else {
-            if(code_ascii_suivant == 0){
-                longueur = (gid+1)%L; 
-                atomic_inc(bufferHistogramsLength+longueur);
-            }
+    else {
+        if(code_ascii_suivant == 0){
+            int longueur = (gid)%L; 
+            atomic_inc(bufferHistogramsLength+longueur);
         }
     }
 }
-/*
+}
+
 __kernel void lcss( 
     __global const char *allwords, 
     __global const char *query, 
-    __global       int  *lengthWord, 
     __global       int  *lcss,
     int Q, // size of query string
     int L) // longest word
 {
     int gid = get_global_id(0);
-    int sizeMot = 0;
+    int i = 0;
     int finMot = 0;
     while(finMot == 0){
-        int ascii = (int)allwords[gid*L + sizeMot];
-        if((ascii == 0) || (sizeMot == L)){
-            finMot = 1;
-        }
-        sizeMot = sizeMot + 1;
+        int ascii = (int)allwords[gid*L+i];
+        if((ascii == 0) || (i == L)){
+       		finMot = 1;
+	}
+        i = i + 1;
     }
-    sizeMot = sizeMot - 1; 
-    // On soustrait de 1 pour rester cohérent avec le code CPU 
-    // puisqu'on a décidé de ne pas compter le caractère '/n'
-
-    lengthWord[gid] = sizeMot;
-    //On sauvegarde la longueur de chaque mot, est-ce utile ou pas, on verra ^^
-    //C'est plus un test pour verifier que l'algo fonctionne
-
-    int dynamicProg[100][100]; //n'accepte pas des variables
+    int sizeMot = i;
+    int dynamicProg[64][64]; //n'accepte pas des variables avec 100 100 ça fait planter les pc de la fac
     for (int j = 0; j < sizeMot; j++) {
         dynamicProg[0][j] = 0;
     }
     for (int i = 1; i < Q; i++) {
         dynamicProg[i][0] = 0;
         for (int j = 1; j < sizeMot; j++) {
-            if (query[i] == allwords[gid*L+j]) {
+            if (query[i-1] == allwords[gid*L+j-1]) {
                 dynamicProg[i][j] = 1 + dynamicProg[i - 1][j - 1];
             } else {
                 dynamicProg[i][j] = max(dynamicProg[i - 1][j], dynamicProg[i][j - 1]);
@@ -65,108 +56,46 @@ __kernel void lcss(
         }
     }
     int lcss_value = dynamicProg[Q-1][sizeMot-1];
-    int position = gid%L;
-    int index = 0;
-    if(position != 0){
-        int temp = L - position;
-        index = gid + temp / L; 
-    }
-    else{
-        index = gid / L;
-    }
     lcss[gid] = lcss_value;
 }
-*/
 
+/*
 __kernel void lcss( 
     __global const char *allwords, 
     __global const char *query, 
-    __global       int  *lengthWord, 
     __global       int  *lcss,
     int Q, // size of query string
     int L) // longest word
 {
     int gid = get_global_id(0);
-    int sizeMot = 0;
-    int finMot = 0;
-    while(finMot == 0){
-        int ascii = (int)allwords[gid*L + sizeMot];
-        if((ascii == 0) || (sizeMot == L)){
-            finMot = 1;
+    int i = 0;
+    int fin = 0;
+    while(fin == 0){
+        int ascii = (int)allwords[gid*L+i];
+        if((ascii == 0) || (i == L)){
+            fin = 1;
         }
-        sizeMot = sizeMot + 1;
-    }
-    sizeMot = sizeMot - 1; 
-    // On soustrait de 1 pour rester cohérent avec le code CPU 
-    // puisqu'on a décidé de ne pas compter le caractère '/n'
-    lengthWord[gid] = sizeMot;
+        i++;
+   }
+    int sizeMot = i-1;
+    int dynamicProg[128*128];
 
-
-    int dynamicProg[100][100]; //n'accepte pas des variables
-    int m = Q;
-    int n = sizeMot;
-    int LCS[200][200];
-    for (int i = 0; i <= m; i++) {
-        LCS[i][n] = 0;
+    for (int i = 0; i < Q; i++) {
+        dynamicProg[i] = 0;
+        for (int j = 0; j < sizeMot; j++) {
+            dynamicProg[i + j*Q] = 0;
+        }
     }
-    for (int j = 0; j <= n; j++) {
-        LCS[m][j] = 0;
-    }
-    for (int i = m - 1; i >= 0; i--) {
-        for (int j = n - 1; j >= 0; j--) {
-            LCS[i][j] = LCS[i + 1][j + 1];
+    for (int i = 1; i < Q; i++) {
+        for (int j = 1; j < sizeMot; j++) {
             if (query[i] == allwords[gid*L+j]) {
-                LCS[i][j] = LCS[i][j] + 1;
-            }
-            if (LCS[i][j + 1] > LCS[i][j]) {
-                LCS[i][j] = LCS[i][j + 1];
-            }
-            if (LCS[i + 1][j] > LCS[i][j]) {
-                LCS[i][j] = LCS[i + 1][j];
+                dynamicProg[i+j*Q] = 1 + dynamicProg[(i - 1) + (j - 1)*Q];
+            } else {
+                dynamicProg[i+j*Q] = max(dynamicProg[(i - 1) + j*Q], dynamicProg[i + (j - 1)*Q]);
             }
         }
     }
-    int lcss_value = LCS[0][0];
-    lcss[gid] = lcss_value;
-
-
-}
-
-/*
-__kernel void lcss( 
-    __global const char *allwords, 
-    __global const char *query, 
-    __global       int  *lengthWord, 
-    __global       int  *lcss,
-    int Q, // size of query string
-    int L) // longest word
-{
-    int gid = get_global_id(0);
-    int sizeMot = 0;
-    int finMot = 0;
-    while(finMot == 0){
-        int ascii = (int)allwords[gid*L + sizeMot];
-        if((ascii == 0) || (sizeMot == L)){
-            finMot = 1;
-        }
-        sizeMot = sizeMot + 1;
-    }
-    sizeMot = sizeMot - 1; 
-    // On soustrait de 1 pour rester cohérent avec le code CPU 
-    // puisqu'on a décidé de ne pas compter le caractère '/n'
-    lengthWord[gid] = sizeMot;
-}
-*/
-/*
-__kernel void list(
-    __global const char *allwords, 
-    __global const int  *lcss, 
-    __global const int  *lengthWord, 
-    __global       int  *tabWord,
-    int valueLCSS, // request value
-    int L) // longest word
-{
-    int gid = get_global_id(0);
+    int lcss_value = dynamicProg[(Q-1)+(sizeMot-1) * Q];
     int position = gid%L;
     int index = 0;
     if(position != 0){
@@ -176,16 +105,10 @@ __kernel void list(
     else{
         index = gid / L;
     }
-    int sizeMot = lengthWord[gid];
-    if(lcss[gid] == valueLCSS){
-        char mot[100];
-        for(int i = 0; i < 100; i++){
-            mot[i] = allwords[index*L + i];
-        }
-        tabWord[gid] = mot;
-    } 
+    lcss[gid] = lcss_value;
 }
 */
+
 
 __kernel void list(
     __global const char *allwords, 
@@ -196,6 +119,18 @@ __kernel void list(
 {
     int gid = get_global_id(0);
     if(lcss[gid] == valueLCSS){
-        bufferList[gid] = 1;
+        atomic_inc(bufferList+gid);
     } 
+}
+
+
+__kernel void minim(
+    __global const int  *lcss, 
+    __global       int  *bufferLCSS_Min)
+{
+    int gid = get_global_id(0);
+    if(lcss[gid] < bufferLCSS_Min[0]){
+        bufferLCSS_Min[0] = lcss[gid];
+    } 
+
 }
