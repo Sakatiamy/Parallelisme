@@ -277,6 +277,7 @@ int main(int argc, char **argv) {
     cerr << "********************DEBUT PARTIE 2********************" << endl;
     cl_int errLCSS;
     cl::Kernel *krn_lcss = cluLoadKernel(prg, "lcss");
+//    cl::Kernel *krn_lcss = cluLoadKernel(prg, "lcss1D");
     cl::Event eventLCSS;
 
     int querySize = strlen(query) + 1;
@@ -443,8 +444,8 @@ int main(int argc, char **argv) {
      * La valeur a été choisie de manière subjective à '64', impliquant la relation : longest < 64.
      * Suivant la configuration des PC, il est possible d'augmenter cette valeur (sans tout faire planter) 
      * agrandissant ainsi la taille du plus long mot du dictionnaire. 
-     * 
-     * 
+     * Ceci n'est malheureusement pas optimale, mais je n'ai pas trouver le moyen de contourner le problème pour utiliser la valeur de la variable longest. 
+     *  
      * P.S : Chose que je n'arrive pas à comprendre : 
      * Pourquoi un code qui provoque des bugs incompréhensibles fonctionne correctement sur les PC de la Fac ?
      * Cela vient-il des versions OpenCl installées ?
@@ -489,10 +490,29 @@ int main(int argc, char **argv) {
 
     cerr << "********************DEBUT PARTIE 3********************" << endl;
     /**
+     * Après etude du document lcss.pdf, et plus particulièrement les diapositives 7 et 8,
+     * on s'aperçoit que le calcul du lcss d'une case necessite la connaissance de 3 autres.
+     * Ainsi, pour calculer LCSS(S(3), Q(2)), on doit connaitre :
+     *  -   LCSS(S(2), Q(1))
+     *  -   LCSS(S(3), Q(1))
+     *  -   LCSS(S(2), Q(2))
+     * Or, si on observe bien, on remarque qu'elles appartiennent aux 2 diagonales précédant la case voulue.
+     * C'est pourquoi, une implémentation possible consisterait à paralléliser le calcul de chacune des cases d'une diagonale. 
+     * En effet, le calcul de chaque case d'une diagonale ne dépend pas du tout des autres cases (de cette diagonale).
+     * Il nous faudrait alors une synchronisation globale car le calcul d'une diagonale necéssite de connaitre les 2 précédantes 
+     * (conflits possibles de lecture/ecriture entre des threds de groupes différents)
+     * Nous aurions donc, un pseudo algorithme du type :
+     *  (Cf Diapo 8)
+     *  -   Calculer LCSS(S(1), Q(1))
+     *  Synchronisation Globale, ie boucle au niveau de enqueueNDRangeKernel(...).
+     *  -   Calculer LCSS(S(1), Q(2)), LCSS(S(2), Q(1))
+     *  Synchronisation Globale
+     *  -   Calculer LCSS(S(1), Q(3)), LCSS(S(2), Q(2)), LCSS(S(3), Q(1))
+     *  Synchronisation Globale
      * 
      * 
+     * Plus facile à dire qu'à faire.
      */
-
 
     cerr << "********************FIN PARTIE 3********************" << endl;
 

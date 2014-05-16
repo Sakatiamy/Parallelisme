@@ -59,8 +59,8 @@ __kernel void lcss(
     lcss[gid] = lcss_value;
 }
 
-/*
-__kernel void lcss( 
+
+__kernel void lcss1D( 
     __global const char *allwords, 
     __global const char *query, 
     __global       int  *lcss,
@@ -77,7 +77,7 @@ __kernel void lcss(
         }
         i++;
    }
-    int sizeMot = i-1;
+    int sizeMot = i;
     int dynamicProg[128*128];
 
     for (int i = 0; i < Q; i++) {
@@ -88,7 +88,7 @@ __kernel void lcss(
     }
     for (int i = 1; i < Q; i++) {
         for (int j = 1; j < sizeMot; j++) {
-            if (query[i] == allwords[gid*L+j]) {
+            if (query[i-1] == allwords[gid*L+j-1]) {
                 dynamicProg[i+j*Q] = 1 + dynamicProg[(i - 1) + (j - 1)*Q];
             } else {
                 dynamicProg[i+j*Q] = max(dynamicProg[(i - 1) + j*Q], dynamicProg[i + (j - 1)*Q]);
@@ -96,18 +96,9 @@ __kernel void lcss(
         }
     }
     int lcss_value = dynamicProg[(Q-1)+(sizeMot-1) * Q];
-    int position = gid%L;
-    int index = 0;
-    if(position != 0){
-        int temp = L - position;
-        index = gid + temp / L; 
-    }
-    else{
-        index = gid / L;
-    }
     lcss[gid] = lcss_value;
 }
-*/
+
 
 
 __kernel void list(
